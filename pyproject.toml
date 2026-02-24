@@ -1,6 +1,6 @@
 [project]
 name = "ya-frida-mcp"
-version = "0.3.2"
+version = "0.4.0"
 description = "Yet Another Frida MCP Server - Full-featured MCP server for Frida dynamic instrumentation"
 readme = "README.md"
 license = {text = "MIT"}
@@ -8,8 +8,7 @@ authors = [{name = "1shin-7"}]
 requires-python = ">=3.12"
 dependencies = [
     "frida>=17.0.0",
-    "frida-tools>=14.0.0",
-    "fastmcp>=2.0.0",
+    "fastmcp>=3.0.0",
     "click>=8.1.0",
     "tomli>=2.0.0",
     "tomli-w>=1.0.0",

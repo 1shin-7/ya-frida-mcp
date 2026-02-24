@@ -1,7 +1,5 @@
 """Process enumeration and management tools (frida-ps)."""
 
-from __future__ import annotations
-
 from fastmcp import FastMCP
 from fastmcp.server.context import Context
 

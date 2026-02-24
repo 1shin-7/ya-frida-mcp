@@ -1,7 +1,5 @@
 """Memory read/write/scan tools."""
 
-from __future__ import annotations
-
 from typing import Literal
 
 from fastmcp import FastMCP

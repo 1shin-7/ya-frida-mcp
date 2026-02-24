@@ -1,7 +1,5 @@
 """ADB CLI MCP tools — optional, registered only when ``adb`` is on PATH."""
 
-from __future__ import annotations
-
 from typing import Any, Literal
 
 from fastmcp import FastMCP
