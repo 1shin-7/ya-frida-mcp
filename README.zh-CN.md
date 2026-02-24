@@ -17,19 +17,17 @@
 ---
 
 > 市面上现有的 Frida MCP 服务器要么已经停止维护，要么功能有限，仅支持少量基础操作。**ya-frida-mcp** 从零开始构建，旨在成为 AI 智能体与 Frida 之间全面、可用于生产环境的桥梁 —— 开箱即用地涵盖设备管理、进程控制、脚本注入、内存操作，甚至 ADB 集成。
->
-> 本项目的绝大部分代码由 [Claude](https://claude.ai) 协助编写。感谢 Anthropic 让 AI 辅助开发成为现实。
 
 ## 功能特性
 
-**44 个 MCP 工具**，横跨 7 大类别，所有工具均返回结构化 JSON 以最小化 Token 消耗。
+**59 个 MCP 工具**，横跨 7 大类别，所有工具均返回结构化 JSON 以最小化 Token 消耗。
 
 | 类别 | 工具 | 亮点 |
 |------|------|------|
-| **设备** | `frida_ls_devices` `frida_get_device` `frida_add_remote` `frida_remove_remote` | 本地、USB 及远程设备管理 |
-| **进程** | `frida_ps` `frida_spawn` `frida_attach` `frida_detach` `frida_kill` `frida_resume` | 完整的进程生命周期控制 |
-| **应用** | `frida_ls_apps` `frida_ls_apps_running` | 应用枚举 |
-| **脚本** | `frida_inject` `frida_rpc_call` `frida_unload_script` `frida_get_messages` `frida_enumerate_modules` `frida_enumerate_exports` | JS 注入、RPC 调用、模块检查 |
+| **设备** | `frida_ls_devices` `frida_get_device` `frida_add_remote` `frida_remove_remote` `frida_query_system_parameters` `frida_enable_spawn_gating` `frida_disable_spawn_gating` `frida_enumerate_pending_spawn` `frida_enumerate_pending_children` `frida_inject_library_file` `frida_inject_library_blob` | 设备管理、系统信息、Spawn 拦截、原生库注入 |
+| **进程** | `frida_ps` `frida_spawn` `frida_attach` `frida_detach` `frida_kill` `frida_resume` `frida_list_sessions` | 完整进程生命周期；`frida_ps` 支持 scope/pids，`frida_spawn` 支持 argv/env/cwd/stdio |
+| **应用** | `frida_ls_apps` `frida_ls_apps_running` `frida_get_frontmost_application` | 应用枚举，支持 scope/identifiers 过滤 |
+| **脚本** | `frida_inject` `frida_rpc_call` `frida_unload_script` `frida_get_messages` `frida_list_scripts` `frida_enumerate_modules` `frida_enumerate_exports` `frida_list_exports` `frida_post_message` `frida_enable_child_gating` `frida_disable_child_gating` `frida_compile_script` `frida_snapshot_script` `frida_eternalize_script` | JS 注入（QJS/V8）、RPC 调用、子进程拦截、字节码编译、脚本快照 |
 | **内存** | `frida_memory_read` `frida_memory_write` `frida_memory_scan` `frida_memory_protect` | 以十六进制 I/O 进行读/写/扫描/保护 |
 | **ADB** *(可选)* | `adb_shell` `adb_push` `adb_pull` `adb_install` `adb_logcat` `adb_forward` `adb_root` ... | 17 个工具，当 `adb` 在 PATH 中时自动注册 |
 | **Frida Server** *(可选)* | `frida_server_status` `frida_server_install` `frida_server_start` `frida_server_stop` | 通过 ADB 自动下载、推送并管理 Android 上的 frida-server |
@@ -198,8 +196,8 @@ ya_frida_mcp/
 
 - [Frida](https://frida.re) — 动态插桩工具包
 - [FastMCP](https://github.com/jlowin/fastmcp) — Pythonic MCP 服务器框架
-- [Claude](https://claude.ai) — 核心协作者，编写了本项目的绝大部分代码
 - [Click](https://click.palletsprojects.com) — CLI 框架
+- [Claude](https://claude.ai) — AI 辅助开发
 
 ## 许可证
 

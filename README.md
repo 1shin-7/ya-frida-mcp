@@ -17,19 +17,17 @@
 ---
 
 > Existing Frida MCP servers on the market are either abandoned, poorly maintained, or limited to a handful of basic operations. **ya-frida-mcp** was built from scratch to be a comprehensive, production-ready bridge between AI agents and Frida — covering device management, process control, script injection, memory operations, and even ADB integration out of the box.
->
-> The vast majority of this codebase was written with the help of [Claude](https://claude.ai). Huge thanks to Anthropic for making AI-assisted development a reality.
 
 ## Features
 
-**44 MCP tools** across 7 categories, all returning structured JSON for minimal token consumption.
+**59 MCP tools** across 7 categories, all returning structured JSON for minimal token consumption.
 
 | Category | Tools | Highlights |
 |----------|-------|------------|
-| **Device** | `frida_ls_devices` `frida_get_device` `frida_add_remote` `frida_remove_remote` | Local, USB, and remote device management |
-| **Process** | `frida_ps` `frida_spawn` `frida_attach` `frida_detach` `frida_kill` `frida_resume` | Full process lifecycle control |
-| **App** | `frida_ls_apps` `frida_ls_apps_running` | Application enumeration |
-| **Script** | `frida_inject` `frida_rpc_call` `frida_unload_script` `frida_get_messages` `frida_enumerate_modules` `frida_enumerate_exports` | JS injection, RPC calls, module inspection |
+| **Device** | `frida_ls_devices` `frida_get_device` `frida_add_remote` `frida_remove_remote` `frida_query_system_parameters` `frida_enable_spawn_gating` `frida_disable_spawn_gating` `frida_enumerate_pending_spawn` `frida_enumerate_pending_children` `frida_inject_library_file` `frida_inject_library_blob` | Device management, system info, spawn gating, native library injection |
+| **Process** | `frida_ps` `frida_spawn` `frida_attach` `frida_detach` `frida_kill` `frida_resume` `frida_list_sessions` | Full process lifecycle; `frida_ps` supports scope/pids, `frida_spawn` supports argv/env/cwd/stdio |
+| **App** | `frida_ls_apps` `frida_ls_apps_running` `frida_get_frontmost_application` | App enumeration with scope/identifiers filtering |
+| **Script** | `frida_inject` `frida_rpc_call` `frida_unload_script` `frida_get_messages` `frida_list_scripts` `frida_enumerate_modules` `frida_enumerate_exports` `frida_list_exports` `frida_post_message` `frida_enable_child_gating` `frida_disable_child_gating` `frida_compile_script` `frida_snapshot_script` `frida_eternalize_script` | JS injection (QJS/V8), RPC, child gating, bytecode compilation, script snapshots |
 | **Memory** | `frida_memory_read` `frida_memory_write` `frida_memory_scan` `frida_memory_protect` | Read/write/scan/protect with hex I/O |
 | **ADB** *(optional)* | `adb_shell` `adb_push` `adb_pull` `adb_install` `adb_logcat` `adb_forward` `adb_root` ... | 17 tools, auto-registered when `adb` is on PATH |
 | **Frida Server** *(optional)* | `frida_server_status` `frida_server_install` `frida_server_start` `frida_server_stop` | Auto-download, push, and manage frida-server on Android via ADB |
@@ -198,8 +196,8 @@ ya_frida_mcp/
 
 - [Frida](https://frida.re) — Dynamic instrumentation toolkit
 - [FastMCP](https://github.com/jlowin/fastmcp) — Pythonic MCP server framework
-- [Claude](https://claude.ai) — Core collaborator, authored the vast majority of this codebase
 - [Click](https://click.palletsprojects.com) — CLI framework
+- [Claude](https://claude.ai) — AI-assisted development
 
 ## License
 
