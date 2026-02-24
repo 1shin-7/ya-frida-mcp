@@ -66,9 +66,7 @@ class DeviceManager(BaseFridaManager):
 
     async def cleanup(self) -> None:
         self._devices.clear()
-        if self._mgr:
-            await self.run_sync(self._mgr.close)
-            self._mgr = None
+        self._mgr = None
 
     async def _add_remote(self, remote: RemoteDevice) -> FridaDeviceWrapper:
         assert self._mgr is not None
