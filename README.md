@@ -40,7 +40,7 @@
 - **MCP Prompts** — workflow templates for native hooking, Java/ObjC hooking, Stalker tracing, module dumping
 - **TOML Configuration** — customize transport, default device, remote devices, timeouts
 - **CLI Utilities** — `doctor`, `devices`, `ps`, `ls`, `tools`, `install`/`uninstall` for MCP clients
-- **One-command client setup** — register into Claude Desktop, Claude Code, Cursor, Windsurf, or VS Code
+- **One-command client setup** — register into 22+ MCP clients including Claude Desktop, Cursor, VS Code, Windsurf, Roo Code, Cline, Kiro, and more
 - **Structured output** — all tools return compact JSON with `Literal` type hints for LLM-friendly schemas
 
 ## Quickstart
@@ -58,20 +58,47 @@ uv tool install ya-frida-mcp
 ### Register into your MCP client
 
 ```bash
-# Claude Desktop
+# Pick your client
 ya-frida-mcp install claude-desktop
-
-# Claude Code
-ya-frida-mcp install claude-code
-
-# Cursor / Windsurf / VS Code
 ya-frida-mcp install cursor
-ya-frida-mcp install windsurf
 ya-frida-mcp install vscode
+ya-frida-mcp install windsurf
+ya-frida-mcp install roo-code
+ya-frida-mcp install cline
 
-# All at once
+# All supported clients at once
 ya-frida-mcp install all
 ```
+
+<details>
+<summary>All supported clients (22)</summary>
+
+| Key | Client |
+|-----|--------|
+| `amazon-q` | Amazon Q Developer CLI |
+| `augment-code` | Augment Code |
+| `claude-desktop` | Claude Desktop |
+| `claude-code` | Claude Code |
+| `cline` | Cline |
+| `copilot-cli` | Copilot CLI |
+| `crush` | Crush |
+| `cursor` | Cursor |
+| `gemini-cli` | Gemini CLI |
+| `kilo-code` | Kilo Code |
+| `kiro` | Kiro |
+| `lm-studio` | LM Studio |
+| `opencode` | Opencode |
+| `qodo-gen` | Qodo Gen |
+| `qwen-coder` | Qwen Coder |
+| `roo-code` | Roo Code |
+| `trae` | Trae |
+| `vscode` | VS Code |
+| `vscode-insiders` | VS Code Insiders |
+| `warp` | Warp |
+| `windsurf` | Windsurf |
+| `zed` | Zed |
+
+</details>
 
 ### Start the server manually
 
