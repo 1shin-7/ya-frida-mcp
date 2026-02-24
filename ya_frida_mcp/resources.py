@@ -1,7 +1,5 @@
 """MCP resource registrations for Frida state."""
 
-from __future__ import annotations
-
 from fastmcp import FastMCP
 from fastmcp.server.context import Context
 
