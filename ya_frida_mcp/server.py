@@ -64,8 +64,10 @@ def create_server(config: AppConfig | None = None) -> FastMCP:
     # Optional: ADB tools (only when adb is on PATH)
     if ADBClient.available():
         from ya_frida_mcp.tools.adb import register_adb_tools
+        from ya_frida_mcp.tools.frida_server import register_frida_server_tools
 
         register_adb_tools(mcp)
+        register_frida_server_tools(mcp)
 
     # Register resources and prompts
     from ya_frida_mcp.prompts import register_prompts

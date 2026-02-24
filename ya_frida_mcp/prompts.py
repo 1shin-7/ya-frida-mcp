@@ -85,6 +85,21 @@ def register_prompts(mcp: FastMCP) -> None:
         )
 
     @mcp.prompt
+    def frida_android_usb_setup() -> str:
+        """Workflow: set up frida-server on an Android device connected via USB."""
+        return (
+            "When connecting to an Android device via USB (-U) for Frida instrumentation:\n\n"
+            "1. Call `frida_server_status` to check if frida-server is running "
+            "and whether its version matches the local Frida client.\n"
+            "2. If frida-server is not present or the version is mismatched, "
+            "call `frida_server_install` to download the correct version, "
+            "push it to the device, and start it.\n"
+            "3. If frida-server is present but stopped, call `frida_server_start`.\n"
+            "4. Once frida-server is confirmed running and version-matched, "
+            "proceed with `frida_attach` or `frida_spawn` as needed."
+        )
+
+    @mcp.prompt
     def frida_enumerate_and_dump() -> str:
         """Workflow: enumerate modules then dump exports."""
         return (
