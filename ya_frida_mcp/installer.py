@@ -18,6 +18,13 @@ class MCPClientInstaller(ABC):
     name: ClassVar[str]
     key: ClassVar[str]
 
+    # Override in subclasses that use a nested JSON structure.
+    # Format: (top_level_key, nested_key)
+    #   ("mcp", "servers")  -> config["mcp"]["servers"][server_name]
+    #   (None, "servers")   -> config["servers"][server_name]
+    #   None                -> config["mcpServers"][server_name]  (default)
+    _json_structure: ClassVar[tuple[str | None, str] | None] = None
+
     @abstractmethod
     def config_path(self) -> Path:
         """Return the path to this client's MCP config file."""
@@ -26,11 +33,39 @@ class MCPClientInstaller(ABC):
         """Check if the client appears to be installed."""
         return self.config_path().parent.exists()
 
+    # ------------------------------------------------------------------
+    # Helpers for navigating the servers dict inside the config
+    # ------------------------------------------------------------------
+
+    def _get_servers_dict(self, data: dict, *, create: bool = False) -> dict:
+        """Return the dict that holds server entries, respecting _json_structure."""
+        struct = self._json_structure
+        if struct is None:
+            if create:
+                return data.setdefault("mcpServers", {})
+            return data.get("mcpServers", {})
+
+        top_key, nested_key = struct
+        if top_key is None:
+            # servers at top level  e.g. config["servers"]
+            if create:
+                return data.setdefault(nested_key, {})
+            return data.get(nested_key, {})
+
+        # nested  e.g. config["mcp"]["servers"]
+        if create:
+            parent = data.setdefault(top_key, {})
+            return parent.setdefault(nested_key, {})
+        parent = data.get(top_key, {})
+        return parent.get(nested_key, {})
+
+    # ------------------------------------------------------------------
+
     def install(self, server_name: str, command: list[str]) -> bool:
         """Write server entry into the client's MCP config. Returns True if changed."""
         path = self.config_path()
         data = self._read_config(path)
-        servers = data.setdefault("mcpServers", {})
+        servers = self._get_servers_dict(data, create=True)
         entry = {"command": command[0], "args": command[1:]}
         if servers.get(server_name) == entry:
             return False
@@ -42,7 +77,7 @@ class MCPClientInstaller(ABC):
         """Remove server entry from the client's MCP config. Returns True if changed."""
         path = self.config_path()
         data = self._read_config(path)
-        servers = data.get("mcpServers", {})
+        servers = self._get_servers_dict(data, create=False)
         if server_name not in servers:
             return False
         del servers[server_name]
@@ -55,7 +90,7 @@ class MCPClientInstaller(ABC):
         if not path.exists():
             return False
         data = self._read_config(path)
-        return server_name in data.get("mcpServers", {})
+        return server_name in self._get_servers_dict(data)
 
     @staticmethod
     def _read_config(path: Path) -> dict:
@@ -84,6 +119,51 @@ def _appdata() -> Path:
     return _home() / ".config"
 
 
+def _vscode_global_storage(ext_id: str) -> Path:
+    """Return the globalStorage path for a VS Code extension."""
+    system = platform.system()
+    if system == "Windows":
+        base = Path(os.environ.get("APPDATA", "")) / "Code" / "User" / "globalStorage"
+    elif system == "Darwin":
+        base = _home() / "Library" / "Application Support" / "Code" / "User" / "globalStorage"
+    else:
+        base = _home() / ".config" / "Code" / "User" / "globalStorage"
+    return base / ext_id
+
+
+def _vscode_user_dir(variant: str = "Code") -> Path:
+    """Return the VS Code User settings directory."""
+    system = platform.system()
+    if system == "Windows":
+        return Path(os.environ.get("APPDATA", "")) / variant / "User"
+    if system == "Darwin":
+        return _home() / "Library" / "Application Support" / variant / "User"
+    return _home() / ".config" / variant / "User"
+
+
+# ===================================================================
+# Concrete installers — sorted alphabetically
+# ===================================================================
+
+
+class AmazonQInstaller(MCPClientInstaller):
+    name: ClassVar[str] = "Amazon Q"
+    key: ClassVar[str] = "amazon-q"
+
+    def config_path(self) -> Path:
+        return _home() / ".aws" / "amazonq" / "mcp_config.json"
+
+
+class AugmentCodeInstaller(MCPClientInstaller):
+    """Augment Code stores MCP config inside VS Code's settings.json."""
+    name: ClassVar[str] = "Augment Code"
+    key: ClassVar[str] = "augment-code"
+    _json_structure: ClassVar[tuple[str | None, str] | None] = ("augment", "mcpServers")
+
+    def config_path(self) -> Path:
+        return _vscode_user_dir() / "settings.json"
+
+
 class ClaudeDesktopInstaller(MCPClientInstaller):
     name: ClassVar[str] = "Claude Desktop"
     key: ClassVar[str] = "claude-desktop"
@@ -105,12 +185,136 @@ class ClaudeCodeInstaller(MCPClientInstaller):
         return _home() / ".claude.json"
 
 
+class ClineInstaller(MCPClientInstaller):
+    name: ClassVar[str] = "Cline"
+    key: ClassVar[str] = "cline"
+
+    def config_path(self) -> Path:
+        return _vscode_global_storage("saoudrizwan.claude-dev") / "settings" / "cline_mcp_settings.json"
+
+
+class CopilotCLIInstaller(MCPClientInstaller):
+    name: ClassVar[str] = "Copilot CLI"
+    key: ClassVar[str] = "copilot-cli"
+
+    def config_path(self) -> Path:
+        return _home() / ".copilot" / "mcp-config.json"
+
+
+class CrushInstaller(MCPClientInstaller):
+    name: ClassVar[str] = "Crush"
+    key: ClassVar[str] = "crush"
+
+    def config_path(self) -> Path:
+        return _home() / "crush.json"
+
+
 class CursorInstaller(MCPClientInstaller):
     name: ClassVar[str] = "Cursor"
     key: ClassVar[str] = "cursor"
 
     def config_path(self) -> Path:
         return _home() / ".cursor" / "mcp.json"
+
+
+class GeminiCLIInstaller(MCPClientInstaller):
+    name: ClassVar[str] = "Gemini CLI"
+    key: ClassVar[str] = "gemini-cli"
+
+    def config_path(self) -> Path:
+        return _home() / ".gemini" / "settings.json"
+
+
+class KiloCodeInstaller(MCPClientInstaller):
+    name: ClassVar[str] = "Kilo Code"
+    key: ClassVar[str] = "kilo-code"
+
+    def config_path(self) -> Path:
+        return _vscode_global_storage("kilocode.kilo-code") / "settings" / "mcp_settings.json"
+
+
+class KiroInstaller(MCPClientInstaller):
+    name: ClassVar[str] = "Kiro"
+    key: ClassVar[str] = "kiro"
+
+    def config_path(self) -> Path:
+        return _home() / ".kiro" / "mcp_config.json"
+
+
+class LMStudioInstaller(MCPClientInstaller):
+    name: ClassVar[str] = "LM Studio"
+    key: ClassVar[str] = "lm-studio"
+
+    def config_path(self) -> Path:
+        return _home() / ".lmstudio" / "mcp.json"
+
+
+class OpencodeInstaller(MCPClientInstaller):
+    name: ClassVar[str] = "Opencode"
+    key: ClassVar[str] = "opencode"
+
+    def config_path(self) -> Path:
+        return _home() / ".opencode" / "mcp_config.json"
+
+
+class QodoGenInstaller(MCPClientInstaller):
+    """Qodo Gen stores MCP config inside VS Code's settings.json."""
+    name: ClassVar[str] = "Qodo Gen"
+    key: ClassVar[str] = "qodo-gen"
+    _json_structure: ClassVar[tuple[str | None, str] | None] = ("qodo-gen", "mcpServers")
+
+    def config_path(self) -> Path:
+        return _vscode_user_dir() / "settings.json"
+
+
+class QwenCoderInstaller(MCPClientInstaller):
+    name: ClassVar[str] = "Qwen Coder"
+    key: ClassVar[str] = "qwen-coder"
+
+    def config_path(self) -> Path:
+        return _home() / ".qwen" / "settings.json"
+
+
+class RooCodeInstaller(MCPClientInstaller):
+    name: ClassVar[str] = "Roo Code"
+    key: ClassVar[str] = "roo-code"
+
+    def config_path(self) -> Path:
+        return _vscode_global_storage("rooveterinaryinc.roo-cline") / "settings" / "mcp_settings.json"
+
+
+class TraeInstaller(MCPClientInstaller):
+    name: ClassVar[str] = "Trae"
+    key: ClassVar[str] = "trae"
+
+    def config_path(self) -> Path:
+        return _home() / ".trae" / "mcp_config.json"
+
+
+class VSCodeInstaller(MCPClientInstaller):
+    name: ClassVar[str] = "VS Code"
+    key: ClassVar[str] = "vscode"
+    _json_structure: ClassVar[tuple[str | None, str] | None] = ("mcp", "servers")
+
+    def config_path(self) -> Path:
+        return _vscode_user_dir() / "settings.json"
+
+
+class VSCodeInsidersInstaller(MCPClientInstaller):
+    name: ClassVar[str] = "VS Code Insiders"
+    key: ClassVar[str] = "vscode-insiders"
+    _json_structure: ClassVar[tuple[str | None, str] | None] = ("mcp", "servers")
+
+    def config_path(self) -> Path:
+        return _vscode_user_dir("Code - Insiders") / "settings.json"
+
+
+class WarpInstaller(MCPClientInstaller):
+    name: ClassVar[str] = "Warp"
+    key: ClassVar[str] = "warp"
+
+    def config_path(self) -> Path:
+        return _home() / ".warp" / "mcp_config.json"
 
 
 class WindsurfInstaller(MCPClientInstaller):
@@ -121,12 +325,17 @@ class WindsurfInstaller(MCPClientInstaller):
         return _home() / ".codeium" / "windsurf" / "mcp_config.json"
 
 
-class VSCodeInstaller(MCPClientInstaller):
-    name: ClassVar[str] = "VS Code"
-    key: ClassVar[str] = "vscode"
+class ZedInstaller(MCPClientInstaller):
+    name: ClassVar[str] = "Zed"
+    key: ClassVar[str] = "zed"
 
     def config_path(self) -> Path:
-        return Path.cwd() / ".vscode" / "mcp.json"
+        system = platform.system()
+        if system == "Darwin":
+            return _home() / "Library" / "Application Support" / "Zed" / "settings.json"
+        if system == "Windows":
+            return _appdata() / "Zed" / "settings.json"
+        return _home() / ".config" / "zed" / "settings.json"
 
 
 # ---------------------------------------------------------------------------
@@ -134,11 +343,28 @@ class VSCodeInstaller(MCPClientInstaller):
 # ---------------------------------------------------------------------------
 
 ALL_CLIENTS: list[type[MCPClientInstaller]] = [
+    AmazonQInstaller,
+    AugmentCodeInstaller,
     ClaudeDesktopInstaller,
     ClaudeCodeInstaller,
+    ClineInstaller,
+    CopilotCLIInstaller,
+    CrushInstaller,
     CursorInstaller,
-    WindsurfInstaller,
+    GeminiCLIInstaller,
+    KiloCodeInstaller,
+    KiroInstaller,
+    LMStudioInstaller,
+    OpencodeInstaller,
+    QodoGenInstaller,
+    QwenCoderInstaller,
+    RooCodeInstaller,
+    TraeInstaller,
     VSCodeInstaller,
+    VSCodeInsidersInstaller,
+    WarpInstaller,
+    WindsurfInstaller,
+    ZedInstaller,
 ]
 
 CLIENT_MAP: dict[str, type[MCPClientInstaller]] = {cls.key: cls for cls in ALL_CLIENTS}
