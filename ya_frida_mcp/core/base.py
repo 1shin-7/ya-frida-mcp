@@ -2,9 +2,10 @@
 
 import asyncio
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import frida
+if TYPE_CHECKING:
+    import frida
 
 
 class BaseFridaManager(ABC):
@@ -28,15 +29,15 @@ class BaseFridaDevice(ABC):
     """Abstract interface for Frida device operations."""
 
     @abstractmethod
-    async def enumerate_processes(self) -> list[frida.core.Process]:
+    async def enumerate_processes(self, **kwargs) -> "list[frida.core.Process]":
         ...
 
     @abstractmethod
-    async def enumerate_applications(self) -> list[frida.core.Application]:
+    async def enumerate_applications(self, **kwargs) -> "list[frida.core.Application]":
         ...
 
     @abstractmethod
-    async def attach(self, target: int | str) -> frida.core.Session:
+    async def attach(self, target: int | str) -> "frida.core.Session":
         ...
 
     @abstractmethod

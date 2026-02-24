@@ -13,7 +13,7 @@ from ya_frida_mcp.core.options import ScriptRuntime, SessionRealm, TargetSpec, r
 class ScriptHandle:
     """Wrapper around a loaded Frida script with message handling."""
 
-    def __init__(self, script: frida.core.Script, pid: int) -> None:
+    def __init__(self, script: "frida.core.Script", pid: int) -> None:
         self._script = script
         self.pid = pid
         self.messages: list[dict[str, Any]] = []
@@ -31,6 +31,15 @@ class ScriptHandle:
     async def exports_call(self, method: str, *args: Any) -> Any:
         fn = getattr(self._script.exports_sync, method)
         return await BaseFridaManager.run_sync(fn, *args)
+
+    async def list_exports(self) -> list[str]:
+        return await BaseFridaManager.run_sync(self._script.list_exports_sync)
+
+    async def post(self, message: Any, data: bytes | None = None) -> None:
+        await BaseFridaManager.run_sync(self._script.post, message, data)
+
+    async def eternalize(self) -> None:
+        await BaseFridaManager.run_sync(self._script.eternalize)
 
     @property
     def is_destroyed(self) -> bool:
@@ -66,7 +75,7 @@ class SessionManager(BaseFridaManager):
         *,
         realm: SessionRealm | None = None,
         persist_timeout: int | None = None,
-    ) -> tuple[int, frida.core.Session]:
+    ) -> "tuple[int, frida.core.Session]":
         """Attach to a process described by *target*."""
         pid = await resolve_target(target, device)
         session = await device.attach(pid, realm=realm, persist_timeout=persist_timeout)
@@ -74,9 +83,17 @@ class SessionManager(BaseFridaManager):
         return pid, session
 
     async def spawn_and_attach(
-        self, device: FridaDeviceWrapper, program: str, *, auto_resume: bool = True
-    ) -> tuple[int, frida.core.Session]:
-        pid = await device.spawn(program)
+        self,
+        device: FridaDeviceWrapper,
+        program: str,
+        *,
+        auto_resume: bool = True,
+        argv: list[str] | None = None,
+        env: dict[str, str] | None = None,
+        cwd: str | None = None,
+        stdio: str | None = None,
+    ) -> "tuple[int, frida.core.Session]":
+        pid = await device.spawn(program, argv=argv, env=env, cwd=cwd, stdio=stdio)
         session = await device.attach(pid)
         self._sessions[pid] = session
         if auto_resume:
@@ -136,3 +153,69 @@ class SessionManager(BaseFridaManager):
 
     def list_scripts(self) -> list[str]:
         return list(self._scripts.keys())
+
+    # --- Phase 1: script exports & messaging ---
+
+    async def list_script_exports(self, script_id: str) -> list[str]:
+        handle = self._scripts.get(script_id)
+        if not handle:
+            msg = f"Script '{script_id}' not found."
+            raise ValueError(msg)
+        return await handle.list_exports()
+
+    async def post_message(self, script_id: str, message: Any, data: bytes | None = None) -> None:
+        handle = self._scripts.get(script_id)
+        if not handle:
+            msg = f"Script '{script_id}' not found."
+            raise ValueError(msg)
+        await handle.post(message, data)
+
+    # --- Phase 3: child gating ---
+
+    def _get_session(self, pid: int) -> "frida.core.Session":
+        session = self._sessions.get(pid)
+        if not session:
+            msg = f"No active session for PID {pid}. Attach first."
+            raise ValueError(msg)
+        return session
+
+    async def enable_child_gating(self, pid: int) -> None:
+        session = self._get_session(pid)
+        await self.run_sync(session.enable_child_gating)
+
+    async def disable_child_gating(self, pid: int) -> None:
+        session = self._get_session(pid)
+        await self.run_sync(session.disable_child_gating)
+
+    # --- Phase 3: compile / snapshot / eternalize ---
+
+    async def compile_script(
+        self, pid: int, source: str, runtime: ScriptRuntime | None = None,
+    ) -> bytes:
+        session = self._get_session(pid)
+        kwargs: dict[str, object] = {}
+        if runtime is not None:
+            kwargs["runtime"] = runtime
+        return await self.run_sync(session.compile_script, source, **kwargs)
+
+    async def snapshot_script(
+        self,
+        pid: int,
+        embed_script: str,
+        warmup_script: str | None = None,
+        runtime: ScriptRuntime | None = None,
+    ) -> bytes:
+        session = self._get_session(pid)
+        kwargs: dict[str, object] = {"embed_script": embed_script}
+        if warmup_script is not None:
+            kwargs["warmup_script"] = warmup_script
+        if runtime is not None:
+            kwargs["runtime"] = runtime
+        return await self.run_sync(session.snapshot_script, **kwargs)
+
+    async def eternalize_script(self, script_id: str) -> None:
+        handle = self._scripts.get(script_id)
+        if not handle:
+            msg = f"Script '{script_id}' not found."
+            raise ValueError(msg)
+        await handle.eternalize()

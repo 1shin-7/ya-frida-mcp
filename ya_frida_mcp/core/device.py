@@ -11,11 +11,11 @@ from ya_frida_mcp.core.base import BaseFridaDevice, BaseFridaManager
 class FridaDeviceWrapper(BaseFridaDevice):
     """Async wrapper around a single frida.core.Device."""
 
-    def __init__(self, device: frida.core.Device) -> None:
+    def __init__(self, device: "frida.core.Device") -> None:
         self._device = device
 
     @property
-    def raw(self) -> frida.core.Device:
+    def raw(self) -> "frida.core.Device":
         return self._device
 
     @property
@@ -30,21 +30,45 @@ class FridaDeviceWrapper(BaseFridaDevice):
     def dtype(self) -> str:
         return self._device.type
 
-    async def enumerate_processes(self) -> list[frida.core.Process]:
-        return await BaseFridaManager.run_sync(self._device.enumerate_processes)
+    async def enumerate_processes(
+        self,
+        pids: list[int] | None = None,
+        scope: str | None = None,
+    ) -> "list[frida.core.Process]":
+        kwargs: dict[str, object] = {}
+        if pids is not None:
+            kwargs["pids"] = pids
+        if scope is not None:
+            kwargs["scope"] = scope
+        return await BaseFridaManager.run_sync(self._device.enumerate_processes, **kwargs)
 
-    async def enumerate_applications(self) -> list[frida.core.Application]:
-        return await BaseFridaManager.run_sync(self._device.enumerate_applications)
+    async def enumerate_applications(
+        self,
+        identifiers: list[str] | None = None,
+        scope: str | None = None,
+    ) -> "list[frida.core.Application]":
+        kwargs: dict[str, object] = {}
+        if identifiers is not None:
+            kwargs["identifiers"] = identifiers
+        if scope is not None:
+            kwargs["scope"] = scope
+        return await BaseFridaManager.run_sync(self._device.enumerate_applications, **kwargs)
 
-    async def get_frontmost_application(self) -> frida.core.Application | None:
-        return await BaseFridaManager.run_sync(self._device.get_frontmost_application)
+    async def get_frontmost_application(
+        self,
+        scope: str | None = None,
+    ) -> "frida.core.Application | None":
+        kwargs: dict[str, object] = {}
+        if scope is not None:
+            kwargs["scope"] = scope
+        return await BaseFridaManager.run_sync(self._device.get_frontmost_application, **kwargs)
 
     async def attach(
         self,
         target: int | str,
         realm: str | None = None,
         persist_timeout: int | None = None,
-    ) -> frida.core.Session:
+    ) -> "frida.core.Session":
         kwargs: dict[str, object] = {}
         if realm is not None:
             kwargs["realm"] = realm
@@ -52,7 +76,24 @@ class FridaDeviceWrapper(BaseFridaDevice):
             kwargs["persist_timeout"] = persist_timeout
         return await BaseFridaManager.run_sync(self._device.attach, target, **kwargs)
 
-    async def spawn(self, program: str, **kwargs: Any) -> int:
+    async def spawn(
+        self,
+        program: str,
+        *,
+        argv: list[str] | None = None,
+        env: dict[str, str] | None = None,
+        cwd: str | None = None,
+        stdio: str | None = None,
+    ) -> int:
+        kwargs: dict[str, object] = {}
+        if argv is not None:
+            kwargs["argv"] = argv
+        if env is not None:
+            kwargs["env"] = env
+        if cwd is not None:
+            kwargs["cwd"] = cwd
+        if stdio is not None:
+            kwargs["stdio"] = stdio
         return await BaseFridaManager.run_sync(self._device.spawn, program, **kwargs)
 
     async def resume(self, pid: int) -> None:
@@ -60,6 +101,41 @@ class FridaDeviceWrapper(BaseFridaDevice):
 
     async def kill(self, pid: int) -> None:
         await BaseFridaManager.run_sync(self._device.kill, pid)
+
+    # --- Phase 1: system info ---
+
+    async def query_system_parameters(self) -> dict[str, Any]:
+        return await BaseFridaManager.run_sync(self._device.query_system_parameters)
+
+    # --- Phase 2: spawn gating ---
+
+    async def enable_spawn_gating(self) -> None:
+        await BaseFridaManager.run_sync(self._device.enable_spawn_gating)
+
+    async def disable_spawn_gating(self) -> None:
+        await BaseFridaManager.run_sync(self._device.disable_spawn_gating)
+
+    async def enumerate_pending_spawn(self) -> list:
+        return await BaseFridaManager.run_sync(self._device.enumerate_pending_spawn)
+
+    async def enumerate_pending_children(self) -> list:
+        return await BaseFridaManager.run_sync(self._device.enumerate_pending_children)
+
+    # --- Phase 4: native library injection ---
+
+    async def inject_library_file(
+        self, target: int, path: str, entrypoint: str, data: str,
+    ) -> int:
+        return await BaseFridaManager.run_sync(
+            self._device.inject_library_file, target, path, entrypoint, data,
+        )
+
+    async def inject_library_blob(
+        self, target: int, blob: bytes, entrypoint: str, data: str,
+    ) -> int:
+        return await BaseFridaManager.run_sync(
+            self._device.inject_library_blob, target, blob, entrypoint, data,
+        )
 
 
 class DeviceManager(BaseFridaManager):

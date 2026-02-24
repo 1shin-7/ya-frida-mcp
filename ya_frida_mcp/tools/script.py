@@ -1,5 +1,6 @@
 """Script injection and RPC tools."""
 
+import base64
 from typing import Any
 
 from fastmcp import FastMCP
@@ -125,3 +126,132 @@ def register_script_tools(mcp: FastMCP) -> None:
             return [{"type": e["type"], "name": e["name"], "address": e["address"]} for e in exports]
         finally:
             await sm.unload_script(script_id)
+
+    # --- Phase 1: script exports & messaging ---
+
+    @mcp.tool
+    async def frida_list_exports(
+        ctx: Context,
+        script_id: str,
+    ) -> list[str]:
+        """List RPC exports available on an injected script.
+
+        Args:
+            script_id: ID returned by frida_inject.
+        """
+        sm: SessionManager = ctx.lifespan_context["session_manager"]
+        return await sm.list_script_exports(script_id)
+
+    @mcp.tool
+    async def frida_post_message(
+        ctx: Context,
+        script_id: str,
+        message: Any,
+        data: str | None = None,
+    ) -> dict:
+        """Post a message to an injected script.
+
+        Args:
+            script_id: ID returned by frida_inject.
+            message: JSON-serializable message to send.
+            data: Optional base64-encoded binary data.
+        """
+        sm: SessionManager = ctx.lifespan_context["session_manager"]
+        raw_data = base64.b64decode(data) if data else None
+        await sm.post_message(script_id, message, raw_data)
+        return ok("Message posted", script_id=script_id)
+
+    # --- Phase 3: child gating ---
+
+    @mcp.tool
+    async def frida_enable_child_gating(
+        ctx: Context,
+        pid: int,
+    ) -> dict:
+        """Enable child gating on a session.
+
+        When enabled, child processes created by the target are suspended
+        until explicitly resumed.
+
+        Args:
+            pid: Target process PID (must have active session).
+        """
+        sm: SessionManager = ctx.lifespan_context["session_manager"]
+        await sm.enable_child_gating(pid)
+        return ok("Child gating enabled", pid=pid)
+
+    @mcp.tool
+    async def frida_disable_child_gating(
+        ctx: Context,
+        pid: int,
+    ) -> dict:
+        """Disable child gating on a session.
+
+        Args:
+            pid: Target process PID (must have active session).
+        """
+        sm: SessionManager = ctx.lifespan_context["session_manager"]
+        await sm.disable_child_gating(pid)
+        return ok("Child gating disabled", pid=pid)
+
+    # --- Phase 3: compile / snapshot / eternalize ---
+
+    @mcp.tool
+    async def frida_compile_script(
+        ctx: Context,
+        pid: int,
+        source: str,
+        runtime: ScriptRuntime | None = None,
+    ) -> dict:
+        """Compile a script to bytecode without loading it.
+
+        Args:
+            pid: Target process PID (must have active session).
+            source: JavaScript source code to compile.
+            runtime: Script runtime — "qjs" or "v8".
+
+        Returns:
+            Base64-encoded bytecode.
+        """
+        sm: SessionManager = ctx.lifespan_context["session_manager"]
+        bytecode = await sm.compile_script(pid, source, runtime=runtime)
+        return {"bytecode_base64": base64.b64encode(bytecode).decode()}
+
+    @mcp.tool
+    async def frida_snapshot_script(
+        ctx: Context,
+        pid: int,
+        embed_script: str,
+        warmup_script: str | None = None,
+        runtime: ScriptRuntime | None = None,
+    ) -> dict:
+        """Create a snapshot of a script for fast future loading.
+
+        Args:
+            pid: Target process PID (must have active session).
+            embed_script: JavaScript source to embed in the snapshot.
+            warmup_script: Optional script to run during snapshot creation.
+            runtime: Script runtime — "qjs" or "v8".
+
+        Returns:
+            Base64-encoded snapshot data.
+        """
+        sm: SessionManager = ctx.lifespan_context["session_manager"]
+        snapshot = await sm.snapshot_script(
+            pid, embed_script, warmup_script=warmup_script, runtime=runtime,
+        )
+        return {"snapshot_base64": base64.b64encode(snapshot).decode()}
+
+    @mcp.tool
+    async def frida_eternalize_script(
+        ctx: Context,
+        script_id: str,
+    ) -> dict:
+        """Eternalize a script so it persists after detaching from the session.
+
+        Args:
+            script_id: ID returned by frida_inject.
+        """
+        sm: SessionManager = ctx.lifespan_context["session_manager"]
+        await sm.eternalize_script(script_id)
+        return ok("Script eternalized", script_id=script_id)
