@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from fastmcp import FastMCP
 from fastmcp.server.context import Context
 
+from ya_frida_mcp.core.output import ok
 from ya_frida_mcp.core.session import SessionManager
 
 
@@ -46,7 +49,7 @@ def register_memory_tools(mcp: FastMCP) -> None:
         pid: int,
         address: str,
         hex_data: str,
-    ) -> str:
+    ) -> dict:
         """Write bytes to process memory.
 
         Args:
@@ -67,7 +70,7 @@ def register_memory_tools(mcp: FastMCP) -> None:
         script_id = await sm.inject_script(pid, source)
         try:
             written = await sm.call_rpc(script_id, "write_memory")
-            return f"Wrote {written} bytes to {address}"
+            return ok(f"Wrote {written} bytes", address=address, bytes_written=written)
         finally:
             await sm.unload_script(script_id)
 
@@ -112,16 +115,9 @@ def register_memory_tools(mcp: FastMCP) -> None:
         pid: int,
         address: str,
         size: int,
-        protection: str = "rwx",
-    ) -> str:
-        """Change memory protection flags.
-
-        Args:
-            pid: Target process PID (must have active session).
-            address: Start address (hex string).
-            size: Size of the memory region.
-            protection: Protection string (e.g. "rwx", "r--", "rw-").
-        """
+        protection: Literal["---", "r--", "rw-", "rwx", "r-x", "-w-", "-wx", "--x"] = "rwx",
+    ) -> dict:
+        """Change memory protection flags."""
         sm: SessionManager = ctx.lifespan_context["session_manager"]
         source = f"""
         rpc.exports.protect = () => {{
@@ -132,6 +128,6 @@ def register_memory_tools(mcp: FastMCP) -> None:
         script_id = await sm.inject_script(pid, source)
         try:
             await sm.call_rpc(script_id, "protect")
-            return f"Set protection '{protection}' on {size} bytes at {address}"
+            return ok(f"Protection set to '{protection}'", address=address, size=size, protection=protection)
         finally:
             await sm.unload_script(script_id)

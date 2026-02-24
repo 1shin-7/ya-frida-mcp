@@ -6,6 +6,7 @@ from fastmcp import FastMCP
 from fastmcp.server.context import Context
 
 from ya_frida_mcp.core.device import DeviceManager
+from ya_frida_mcp.core.output import ok
 
 
 def register_device_tools(mcp: FastMCP) -> None:
@@ -47,8 +48,8 @@ def register_device_tools(mcp: FastMCP) -> None:
         ctx: Context,
         host: str,
         port: int = 27042,
-    ) -> str:
+    ) -> dict:
         """Disconnect from a remote Frida server."""
         dm: DeviceManager = ctx.lifespan_context["device_manager"]
         await dm.remove_remote(host, port)
-        return f"Removed remote device at {host}:{port}"
+        return ok(f"Removed {host}:{port}")

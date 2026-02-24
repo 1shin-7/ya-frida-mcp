@@ -6,6 +6,7 @@ from fastmcp import FastMCP
 from fastmcp.server.context import Context
 
 from ya_frida_mcp.core.device import DeviceManager
+from ya_frida_mcp.core.output import ok
 from ya_frida_mcp.core.session import SessionManager
 
 
@@ -19,13 +20,13 @@ def register_process_tools(mcp: FastMCP) -> None:
     ) -> list[dict]:
         """List running processes on a device (frida-ps equivalent).
 
-        Returns PID, name, and parameters for each process.
+        Returns PID and name for each process.
         """
         dm: DeviceManager = ctx.lifespan_context["device_manager"]
         device = await dm.get_device(device_id)
         processes = await device.enumerate_processes()
         return [
-            {"pid": p.pid, "name": p.name, "parameters": dict(p.parameters)}
+            {"pid": p.pid, "name": p.name}
             for p in processes
         ]
 
@@ -68,35 +69,35 @@ def register_process_tools(mcp: FastMCP) -> None:
         return {"pid": session.pid, "target": str(target)}
 
     @mcp.tool
-    async def frida_detach(ctx: Context, pid: int) -> str:
+    async def frida_detach(ctx: Context, pid: int) -> dict:
         """Detach from a process session."""
         sm: SessionManager = ctx.lifespan_context["session_manager"]
         await sm.detach(pid)
-        return f"Detached from PID {pid}"
+        return ok(f"Detached from PID {pid}", pid=pid)
 
     @mcp.tool
     async def frida_kill(
         ctx: Context,
         pid: int,
         device_id: str | None = None,
-    ) -> str:
+    ) -> dict:
         """Kill a process by PID."""
         dm: DeviceManager = ctx.lifespan_context["device_manager"]
         device = await dm.get_device(device_id)
         await device.kill(pid)
-        return f"Killed PID {pid}"
+        return ok(f"Killed PID {pid}", pid=pid)
 
     @mcp.tool
     async def frida_resume(
         ctx: Context,
         pid: int,
         device_id: str | None = None,
-    ) -> str:
+    ) -> dict:
         """Resume a suspended process."""
         dm: DeviceManager = ctx.lifespan_context["device_manager"]
         device = await dm.get_device(device_id)
         await device.resume(pid)
-        return f"Resumed PID {pid}"
+        return ok(f"Resumed PID {pid}", pid=pid)
 
     @mcp.tool
     async def frida_list_sessions(ctx: Context) -> list[int]:

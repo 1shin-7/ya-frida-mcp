@@ -18,18 +18,13 @@ def register_app_tools(mcp: FastMCP) -> None:
     ) -> list[dict]:
         """List installed applications on a device (frida-ls equivalent).
 
-        Returns identifier, name, PID (if running), and parameters.
+        Returns identifier, name, and PID (if running).
         """
         dm: DeviceManager = ctx.lifespan_context["device_manager"]
         device = await dm.get_device(device_id)
         apps = await device.enumerate_applications()
         return [
-            {
-                "identifier": a.identifier,
-                "name": a.name,
-                "pid": a.pid,
-                "parameters": dict(a.parameters),
-            }
+            {"identifier": a.identifier, "name": a.name, "pid": a.pid}
             for a in apps
         ]
 
@@ -43,12 +38,7 @@ def register_app_tools(mcp: FastMCP) -> None:
         device = await dm.get_device(device_id)
         apps = await device.enumerate_applications()
         return [
-            {
-                "identifier": a.identifier,
-                "name": a.name,
-                "pid": a.pid,
-                "parameters": dict(a.parameters),
-            }
+            {"identifier": a.identifier, "name": a.name, "pid": a.pid}
             for a in apps
             if a.pid != 0
         ]

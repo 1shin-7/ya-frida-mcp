@@ -7,6 +7,7 @@ from typing import Any
 from fastmcp import FastMCP
 from fastmcp.server.context import Context
 
+from ya_frida_mcp.core.output import ok
 from ya_frida_mcp.core.session import SessionManager
 
 
@@ -55,11 +56,11 @@ def register_script_tools(mcp: FastMCP) -> None:
         return await sm.call_rpc(script_id, method, *call_args)
 
     @mcp.tool
-    async def frida_unload_script(ctx: Context, script_id: str) -> str:
+    async def frida_unload_script(ctx: Context, script_id: str) -> dict:
         """Unload a previously injected script."""
         sm: SessionManager = ctx.lifespan_context["session_manager"]
         await sm.unload_script(script_id)
-        return f"Unloaded {script_id}"
+        return ok(f"Unloaded {script_id}", script_id=script_id)
 
     @mcp.tool
     async def frida_get_messages(ctx: Context, script_id: str) -> list[dict]:
