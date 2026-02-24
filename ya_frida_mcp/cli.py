@@ -8,6 +8,8 @@ import click
 
 from ya_frida_mcp.config import AppConfig
 
+_CLIENT_KEYS = ["claude-desktop", "claude-code", "cursor", "windsurf", "vscode"]
+
 
 @click.group()
 @click.option(
@@ -56,8 +58,6 @@ def serve(ctx: click.Context, transport: str | None, host: str | None, port: int
 # install / uninstall
 # ---------------------------------------------------------------------------
 
-_CLIENT_KEYS = ["claude-desktop", "claude-code", "cursor", "windsurf", "vscode"]
-
 
 @cli.command()
 @click.argument("client", type=click.Choice([*_CLIENT_KEYS, "all"]))
@@ -71,6 +71,8 @@ def install(ctx: click.Context, client: str, name: str) -> None:
     from ya_frida_mcp.installer import ALL_CLIENTS, build_server_command, get_installer
 
     command = build_server_command()
+    click.echo(f"  Command: {' '.join(command)}")
+
     targets = [cls() for cls in ALL_CLIENTS] if client == "all" else [get_installer(client)]
 
     for inst in targets:
@@ -101,7 +103,7 @@ def uninstall(ctx: click.Context, client: str, name: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# doctor
+# doctor / devices / tools
 # ---------------------------------------------------------------------------
 
 
@@ -110,6 +112,7 @@ def uninstall(ctx: click.Context, client: str, name: str) -> None:
 def doctor(ctx: click.Context) -> None:
     """Diagnose Frida connectivity and environment."""
     import asyncio
+    import sys
 
     import frida
 
@@ -118,7 +121,7 @@ def doctor(ctx: click.Context) -> None:
     cfg: AppConfig = ctx.obj["config"]
 
     click.echo("Checking environment...")
-    click.echo(f"  Python:  {'.'.join(map(str, __import__('sys').version_info[:3]))}")
+    click.echo(f"  Python:  {'.'.join(map(str, sys.version_info[:3]))}")
     click.echo(f"  Frida:   {frida.__version__}")
 
     async def _check() -> None:
@@ -139,11 +142,6 @@ def doctor(ctx: click.Context) -> None:
             await dm.cleanup()
 
     asyncio.run(_check())
-
-
-# ---------------------------------------------------------------------------
-# devices / tools
-# ---------------------------------------------------------------------------
 
 
 @cli.command()
@@ -304,7 +302,3 @@ def version() -> None:
 
     click.echo(f"ya-frida-mcp  {__version__}")
     click.echo(f"frida         {frida.__version__}")
-
-
-if __name__ == "__main__":
-    cli()

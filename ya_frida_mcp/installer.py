@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import platform
+import shutil
 import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -153,8 +154,45 @@ def get_installer(key: str) -> MCPClientInstaller:
     return cls()
 
 
+# ---------------------------------------------------------------------------
+# Server launch command
+# ---------------------------------------------------------------------------
+
+_ENTRY_POINT = "ya-frida-mcp"
+
+
+def _resolve_entry_point() -> str:
+    """Resolve the absolute path to the ``ya-frida-mcp`` entry point.
+
+    When the package lives inside a virtualenv (poetry, pdm, uv, plain venv),
+    the bare name won't be on the system PATH that MCP clients see.  We resolve
+    the full path so the registered command always works.
+
+    Lookup order:
+    1. ``shutil.which`` — works because *this* process is already running
+       inside the correct environment.
+    2. Derive from ``sys.executable``'s parent (entry point scripts are
+       co-located with the interpreter).
+    3. Bare name as last resort.
+    """
+    found = shutil.which(_ENTRY_POINT)
+    if found:
+        return str(Path(found).resolve())
+
+    bin_dir = Path(sys.executable).parent
+    suffix = ".exe" if sys.platform == "win32" else ""
+    candidate = bin_dir / f"{_ENTRY_POINT}{suffix}"
+    if candidate.exists():
+        return str(candidate.resolve())
+
+    return _ENTRY_POINT
+
+
 def build_server_command() -> list[str]:
-    """Build the command list for launching this MCP server via uv."""
-    project_dir = str(Path.cwd().resolve())
-    python = sys.executable
-    return [python, str(Path(project_dir) / "main.py"), "serve"]
+    """Return the argv list to launch the MCP server.
+
+    Resolves the entry point to an absolute path so MCP clients can invoke it
+    even when the package is installed inside a virtualenv that isn't on the
+    system PATH.
+    """
+    return [_resolve_entry_point(), "serve"]
