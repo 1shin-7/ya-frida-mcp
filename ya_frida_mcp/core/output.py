@@ -1,7 +1,5 @@
 """Shared structured output helpers for MCP tool responses."""
 
-from __future__ import annotations
-
 from typing import Any
 
 

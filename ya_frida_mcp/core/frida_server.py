@@ -1,7 +1,5 @@
 """Download, deploy, and manage frida-server on Android devices via ADB."""
 
-from __future__ import annotations
-
 import lzma
 import tempfile
 import urllib.request

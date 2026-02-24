@@ -1,7 +1,5 @@
 """MCP prompt templates for common Frida workflows."""
 
-from __future__ import annotations
-
 from fastmcp import FastMCP
 
 

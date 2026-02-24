@@ -1,7 +1,5 @@
 """MCP client installer — register/unregister server config in various MCP clients."""
 
-from __future__ import annotations
-
 import json
 import os
 import platform

@@ -1,7 +1,5 @@
 """Async wrapper around the native ``adb`` CLI."""
 
-from __future__ import annotations
-
 import asyncio
 import shutil
 from dataclasses import dataclass, field

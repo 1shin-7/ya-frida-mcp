@@ -1,6 +1,6 @@
 [project]
 name = "ya-frida-mcp"
-version = "0.4.0"
+version = "0.4.1"
 description = "Yet Another Frida MCP Server - Full-featured MCP server for Frida dynamic instrumentation"
 readme = "README.md"
 license = {text = "MIT"}

@@ -1,7 +1,5 @@
 """FastMCP server factory with Frida lifespan management."""
 
-from __future__ import annotations
-
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 

@@ -4,6 +4,7 @@ from fastmcp import FastMCP
 from fastmcp.server.context import Context
 
 from ya_frida_mcp.core.device import DeviceManager
+from ya_frida_mcp.core.options import SessionRealm, TargetSpec
 from ya_frida_mcp.core.output import ok
 from ya_frida_mcp.core.session import SessionManager
 
@@ -51,23 +52,29 @@ def register_process_tools(mcp: FastMCP) -> None:
     @mcp.tool
     async def frida_attach(
         ctx: Context,
-        target: int | str,
+        pid: int | None = None,
+        name: str | None = None,
+        identifier: str | None = None,
+        frontmost: bool = False,
         device_id: str | None = None,
+        realm: SessionRealm | None = None,
     ) -> dict:
         """Attach to a running process by PID or name.
 
         Args:
-            target: Process PID (int) or name (str).
+            pid: Process PID (int).
+            name: Process name (str).
+            identifier: Application bundle identifier (str).
+            frontmost: Attach to the frontmost application.
             device_id: Target device. Uses default if omitted.
+            realm: Session realm — "native" or "emulated".
         """
-        # MCP JSON always sends strings; coerce numeric strings to int
-        if isinstance(target, str) and target.isdigit():
-            target = int(target)
         dm: DeviceManager = ctx.lifespan_context["device_manager"]
         sm: SessionManager = ctx.lifespan_context["session_manager"]
         device = await dm.get_device(device_id)
-        pid, _session = await sm.attach(device, target)
-        return {"pid": pid, "target": str(target)}
+        target = TargetSpec(pid=pid, name=name, identifier=identifier, frontmost=frontmost)
+        resolved_pid, _session = await sm.attach(device, target, realm=realm)
+        return {"pid": resolved_pid, "target": target.label}
 
     @mcp.tool
     async def frida_detach(ctx: Context, pid: int) -> dict:

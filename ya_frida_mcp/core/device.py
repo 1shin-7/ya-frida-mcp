@@ -1,7 +1,5 @@
 """Frida device management with remote support."""
 
-from __future__ import annotations
-
 from typing import Any
 
 import frida
@@ -38,8 +36,21 @@ class FridaDeviceWrapper(BaseFridaDevice):
     async def enumerate_applications(self) -> list[frida.core.Application]:
         return await BaseFridaManager.run_sync(self._device.enumerate_applications)
 
-    async def attach(self, target: int | str) -> frida.core.Session:
-        return await BaseFridaManager.run_sync(self._device.attach, target)
+    async def get_frontmost_application(self) -> frida.core.Application | None:
+        return await BaseFridaManager.run_sync(self._device.get_frontmost_application)
+
+    async def attach(
+        self,
+        target: int | str,
+        realm: str | None = None,
+        persist_timeout: int | None = None,
+    ) -> frida.core.Session:
+        kwargs: dict[str, object] = {}
+        if realm is not None:
+            kwargs["realm"] = realm
+        if persist_timeout is not None:
+            kwargs["persist_timeout"] = persist_timeout
+        return await BaseFridaManager.run_sync(self._device.attach, target, **kwargs)
 
     async def spawn(self, program: str, **kwargs: Any) -> int:
         return await BaseFridaManager.run_sync(self._device.spawn, program, **kwargs)

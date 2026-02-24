@@ -5,6 +5,7 @@ from typing import Any
 from fastmcp import FastMCP
 from fastmcp.server.context import Context
 
+from ya_frida_mcp.core.options import ScriptRuntime
 from ya_frida_mcp.core.output import ok
 from ya_frida_mcp.core.session import SessionManager
 
@@ -17,6 +18,7 @@ def register_script_tools(mcp: FastMCP) -> None:
         ctx: Context,
         pid: int,
         source: str,
+        runtime: ScriptRuntime | None = None,
     ) -> dict:
         """Inject a JavaScript snippet into a process.
 
@@ -25,12 +27,13 @@ def register_script_tools(mcp: FastMCP) -> None:
         Args:
             pid: Target process PID.
             source: JavaScript source code to inject.
+            runtime: Script runtime — "qjs" or "v8".
 
         Returns:
             script_id for subsequent RPC calls or unloading.
         """
         sm: SessionManager = ctx.lifespan_context["session_manager"]
-        script_id = await sm.inject_script(pid, source)
+        script_id = await sm.inject_script(pid, source, runtime=runtime)
         return {"script_id": script_id, "pid": pid}
 
     @mcp.tool

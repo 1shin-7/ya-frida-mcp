@@ -1,7 +1,5 @@
 """Configuration management with TOML support."""
 
-from __future__ import annotations
-
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -48,7 +46,7 @@ class AppConfig:
     frida: FridaConfig = field(default_factory=FridaConfig)
 
     @classmethod
-    def load(cls, path: Path | None = None) -> AppConfig:
+    def load(cls, path: Path | None = None) -> "AppConfig":
         """Load config from TOML file, falling back to defaults."""
         if path is None:
             path = Path.cwd() / DEFAULT_CONFIG_NAME
@@ -59,7 +57,7 @@ class AppConfig:
         return cls._from_dict(raw)
 
     @classmethod
-    def _from_dict(cls, data: dict) -> AppConfig:
+    def _from_dict(cls, data: dict) -> "AppConfig":
         server_data = data.get("server", {})
         frida_data = data.get("frida", {})
         remote_list = frida_data.pop("remote_devices", [])

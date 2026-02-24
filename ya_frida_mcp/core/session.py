@@ -1,7 +1,5 @@
 """Frida session and script lifecycle management."""
 
-from __future__ import annotations
-
 import contextlib
 from typing import Any
 
@@ -9,6 +7,7 @@ import frida
 
 from ya_frida_mcp.core.base import BaseFridaManager
 from ya_frida_mcp.core.device import FridaDeviceWrapper
+from ya_frida_mcp.core.options import ScriptRuntime, SessionRealm, TargetSpec, resolve_target
 
 
 class ScriptHandle:
@@ -60,13 +59,17 @@ class SessionManager(BaseFridaManager):
                 await self.run_sync(session.detach)
         self._sessions.clear()
 
-    async def attach(self, device: FridaDeviceWrapper, target: int | str) -> tuple[int, frida.core.Session]:
-        session = await device.attach(target)
-        if isinstance(target, int):
-            pid = target
-        else:
-            processes = await device.enumerate_processes()
-            pid = next((p.pid for p in processes if p.name == target), 0)
+    async def attach(
+        self,
+        device: FridaDeviceWrapper,
+        target: TargetSpec,
+        *,
+        realm: SessionRealm | None = None,
+        persist_timeout: int | None = None,
+    ) -> tuple[int, frida.core.Session]:
+        """Attach to a process described by *target*."""
+        pid = await resolve_target(target, device)
+        session = await device.attach(pid, realm=realm, persist_timeout=persist_timeout)
         self._sessions[pid] = session
         return pid, session
 
@@ -85,12 +88,21 @@ class SessionManager(BaseFridaManager):
         if session:
             await self.run_sync(session.detach)
 
-    async def inject_script(self, pid: int, source: str) -> str:
+    async def inject_script(
+        self,
+        pid: int,
+        source: str,
+        *,
+        runtime: ScriptRuntime | None = None,
+    ) -> str:
         session = self._sessions.get(pid)
         if not session:
             msg = f"No active session for PID {pid}. Attach first."
             raise ValueError(msg)
-        script = await self.run_sync(session.create_script, source)
+        kwargs: dict[str, object] = {}
+        if runtime is not None:
+            kwargs["runtime"] = runtime
+        script = await self.run_sync(session.create_script, source, **kwargs)
         self._script_counter += 1
         script_id = f"script_{self._script_counter}"
         handle = ScriptHandle(script, pid)
