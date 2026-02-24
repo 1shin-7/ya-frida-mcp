@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 from fastmcp import FastMCP
 
 from ya_frida_mcp.config import AppConfig
+from ya_frida_mcp.core.adb import ADBClient
 from ya_frida_mcp.core.device import DeviceManager
 from ya_frida_mcp.core.session import SessionManager
 
@@ -22,11 +23,14 @@ def _make_lifespan(config: AppConfig):
         await dm.initialize()
         await sm.initialize()
         try:
-            yield {
+            ctx: dict = {
                 "device_manager": dm,
                 "session_manager": sm,
                 "config": config,
             }
+            if ADBClient.available():
+                ctx["adb_client"] = ADBClient()
+            yield ctx
         finally:
             await sm.cleanup()
             await dm.cleanup()
@@ -56,6 +60,12 @@ def create_server(config: AppConfig | None = None) -> FastMCP:
     register_app_tools(mcp)
     register_script_tools(mcp)
     register_memory_tools(mcp)
+
+    # Optional: ADB tools (only when adb is on PATH)
+    if ADBClient.available():
+        from ya_frida_mcp.tools.adb import register_adb_tools
+
+        register_adb_tools(mcp)
 
     # Register resources and prompts
     from ya_frida_mcp.prompts import register_prompts
