@@ -1,0 +1,15 @@
+[server]
+name = "ya-frida-mcp"
+transport = "stdio"
+host = "0.0.0.0"
+port = 8000
+
+[frida]
+default_device = "local"
+script_timeout = 30
+spawn_timeout = 30
+
+# Example remote device entries:
+# [[frida.remote_devices]]
+# host = "192.168.1.100"
+# port = 27042

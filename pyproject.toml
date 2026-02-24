@@ -1,0 +1,27 @@
+[project]
+name = "ya-frida-mcp"
+version = "0.1.0"
+description = "Yet Another Frida MCP Server - Full-featured MCP server for Frida dynamic instrumentation"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "frida>=16.0.0",
+    "frida-tools>=12.0.0",
+    "fastmcp>=2.0.0",
+    "click>=8.1.0",
+    "tomli>=2.0.0",
+    "tomli-w>=1.0.0",
+]
+
+[project.scripts]
+ya-frida-mcp = "main:cli"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "A", "SIM", "RUF"]
+
+[dependency-groups]
+dev = ["ruff>=0.9.0"]
