@@ -60,11 +60,15 @@ class SessionManager(BaseFridaManager):
                 await self.run_sync(session.detach)
         self._sessions.clear()
 
-    async def attach(self, device: FridaDeviceWrapper, target: int | str) -> frida.core.Session:
+    async def attach(self, device: FridaDeviceWrapper, target: int | str) -> tuple[int, frida.core.Session]:
         session = await device.attach(target)
-        pid = session.pid
+        if isinstance(target, int):
+            pid = target
+        else:
+            processes = await device.enumerate_processes()
+            pid = next((p.pid for p in processes if p.name == target), 0)
         self._sessions[pid] = session
-        return session
+        return pid, session
 
     async def spawn_and_attach(
         self, device: FridaDeviceWrapper, program: str, *, auto_resume: bool = True

@@ -60,11 +60,14 @@ def register_process_tools(mcp: FastMCP) -> None:
             target: Process PID (int) or name (str).
             device_id: Target device. Uses default if omitted.
         """
+        # MCP JSON always sends strings; coerce numeric strings to int
+        if isinstance(target, str) and target.isdigit():
+            target = int(target)
         dm: DeviceManager = ctx.lifespan_context["device_manager"]
         sm: SessionManager = ctx.lifespan_context["session_manager"]
         device = await dm.get_device(device_id)
-        session = await sm.attach(device, target)
-        return {"pid": session.pid, "target": str(target)}
+        pid, _session = await sm.attach(device, target)
+        return {"pid": pid, "target": str(target)}
 
     @mcp.tool
     async def frida_detach(ctx: Context, pid: int) -> dict:
