@@ -20,9 +20,9 @@ class BaseFridaManager(ABC):
         """Release all managed resources."""
 
     @staticmethod
-    async def run_sync(func: Any, *args: Any) -> Any:
+    async def run_sync(func: Any, *args: Any, **kwargs: Any) -> Any:
         """Run a synchronous Frida call in a thread pool."""
-        return await asyncio.to_thread(func, *args)
+        return await asyncio.to_thread(func, *args, **kwargs)
 
 
 class BaseFridaDevice(ABC):
