@@ -116,5 +116,15 @@ class DeviceManager(BaseFridaManager):
             return wrapper
         if target_id in self._devices:
             return self._devices[target_id]
+        # Attempt a direct lookup via the device manager, which properly
+        # establishes the transport connection (unlike cached enumerate refs).
+        assert self._mgr is not None
+        try:
+            device = await self.run_sync(self._mgr.get_device, target_id, 5)
+            wrapper = FridaDeviceWrapper(device)
+            self._devices[wrapper.id] = wrapper
+            return wrapper
+        except frida.InvalidArgumentError:
+            pass
         msg = f"Device '{target_id}' not found. Available: {list(self._devices.keys())}"
         raise ValueError(msg)

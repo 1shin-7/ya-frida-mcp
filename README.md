@@ -20,7 +20,7 @@
 
 ## Features
 
-**40 MCP tools** across 6 categories, all returning structured JSON for minimal token consumption.
+**44 MCP tools** across 7 categories, all returning structured JSON for minimal token consumption.
 
 | Category | Tools | Highlights |
 |----------|-------|------------|
@@ -30,6 +30,7 @@
 | **Script** | `frida_inject` `frida_rpc_call` `frida_unload_script` `frida_get_messages` `frida_enumerate_modules` `frida_enumerate_exports` | JS injection, RPC calls, module inspection |
 | **Memory** | `frida_memory_read` `frida_memory_write` `frida_memory_scan` `frida_memory_protect` | Read/write/scan/protect with hex I/O |
 | **ADB** *(optional)* | `adb_shell` `adb_push` `adb_pull` `adb_install` `adb_logcat` `adb_forward` `adb_root` ... | 17 tools, auto-registered when `adb` is on PATH |
+| **Frida Server** *(optional)* | `frida_server_status` `frida_server_install` `frida_server_start` `frida_server_stop` | Auto-download, push, and manage frida-server on Android via ADB |
 
 **Also includes:**
 
@@ -152,6 +153,7 @@ ya_frida_mcp/
 │   ├── device.py       # Frida device wrapper + manager
 │   ├── session.py      # Session + script lifecycle
 │   ├── adb.py          # ADB CLI async wrapper
+│   ├── frida_server.py # frida-server download & deploy logic
 │   └── output.py       # Structured output helpers
 └── tools/
     ├── device.py       # Device discovery tools
@@ -159,7 +161,8 @@ ya_frida_mcp/
     ├── app.py          # App enumeration tools
     ├── script.py       # Script injection + RPC tools
     ├── memory.py       # Memory read/write/scan tools
-    └── adb.py          # ADB CLI tools (optional)
+    ├── adb.py          # ADB CLI tools (optional)
+    └── frida_server.py # frida-server management tools (optional)
 ```
 
 ## Credits
