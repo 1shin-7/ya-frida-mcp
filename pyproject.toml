@@ -1,8 +1,10 @@
 [project]
 name = "ya-frida-mcp"
-version = "0.1.0"
+version = "0.2.2"
 description = "Yet Another Frida MCP Server - Full-featured MCP server for Frida dynamic instrumentation"
 readme = "README.md"
+license = {text = "MIT"}
+authors = [{name = "1shin-7"}]
 requires-python = ">=3.12"
 dependencies = [
     "frida>=16.0.0",
