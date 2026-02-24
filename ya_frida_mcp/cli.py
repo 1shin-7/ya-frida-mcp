@@ -32,12 +32,32 @@ _CLIENT_KEYS = [
 ]
 
 
+def _version_callback(ctx: click.Context, _param: click.Parameter, value: bool) -> None:
+    if not value or ctx.resilient_parsing:
+        return
+    import frida
+
+    from ya_frida_mcp import __version__
+
+    click.echo(f"ya-frida-mcp  {__version__}")
+    click.echo(f"frida         {frida.__version__}")
+    ctx.exit()
+
+
 @click.group()
 @click.option(
     "--config", "-c",
     type=click.Path(exists=False, path_type=Path),
     default=None,
     help="Path to config.toml file.",
+)
+@click.option(
+    "--version", "-V",
+    is_flag=True,
+    callback=_version_callback,
+    expose_value=False,
+    is_eager=True,
+    help="Show version and exit.",
 )
 @click.pass_context
 def cli(ctx: click.Context, config: Path | None) -> None:
