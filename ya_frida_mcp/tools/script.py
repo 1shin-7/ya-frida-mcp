@@ -25,10 +25,16 @@ def register_script_tools(mcp: FastMCP) -> None:
 
         The process must already have an active session (use frida_attach first).
 
+        IMPORTANT: The default runtime is QJS (QuickJS), which is lightweight but does
+        NOT include the Java/ObjC bridges. If your script uses Java.perform(),
+        Java.use(), ObjC.classes, or any Java/Objective-C APIs, you MUST set
+        runtime="v8". Always use runtime="v8" for Android Java hooking.
+
         Args:
             pid: Target process PID.
             source: JavaScript source code to inject.
-            runtime: Script runtime — "qjs" or "v8".
+            runtime: Script runtime — "qjs" (default, no Java/ObjC bridge) or
+                     "v8" (full runtime with Java/ObjC bridge support).
 
         Returns:
             script_id for subsequent RPC calls or unloading.
@@ -83,11 +89,17 @@ def register_script_tools(mcp: FastMCP) -> None:
     async def frida_enumerate_modules(
         ctx: Context,
         pid: int,
+        name_filter: str | None = None,
     ) -> list[dict]:
         """Enumerate loaded modules in a process.
 
         Injects a helper script to call Process.enumerateModules().
         Requires an active session for the given PID.
+
+        Args:
+            pid: Target process PID (must have active session).
+            name_filter: Optional substring filter on module name (case-insensitive).
+                         Use this to avoid returning hundreds of modules at once.
         """
         sm: SessionManager = ctx.lifespan_context["session_manager"]
         source = """
@@ -98,7 +110,14 @@ def register_script_tools(mcp: FastMCP) -> None:
         script_id = await sm.inject_script(pid, source)
         try:
             modules = await sm.call_rpc(script_id, "enumerate_modules")
-            return [{"name": m["name"], "base": m["base"], "size": m["size"], "path": m["path"]} for m in modules]
+            result = [
+                {"name": m["name"], "base": m["base"], "size": m["size"], "path": m["path"]}
+                for m in modules
+            ]
+            if name_filter:
+                flt = name_filter.lower()
+                result = list(filter(lambda m: flt in m["name"].lower(), result))
+            return result
         finally:
             await sm.unload_script(script_id)
 
@@ -208,7 +227,8 @@ def register_script_tools(mcp: FastMCP) -> None:
         Args:
             pid: Target process PID (must have active session).
             source: JavaScript source code to compile.
-            runtime: Script runtime — "qjs" or "v8".
+            runtime: Script runtime — "qjs" (default, no Java/ObjC) or
+                     "v8" (full runtime with Java/ObjC bridge).
 
         Returns:
             Base64-encoded bytecode.
@@ -231,7 +251,8 @@ def register_script_tools(mcp: FastMCP) -> None:
             pid: Target process PID (must have active session).
             embed_script: JavaScript source to embed in the snapshot.
             warmup_script: Optional script to run during snapshot creation.
-            runtime: Script runtime — "qjs" or "v8".
+            runtime: Script runtime — "qjs" (default, no Java/ObjC) or
+                     "v8" (full runtime with Java/ObjC bridge).
 
         Returns:
             Base64-encoded snapshot data.
