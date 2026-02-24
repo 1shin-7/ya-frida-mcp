@@ -40,7 +40,7 @@
 - **MCP 提示词** — 用于 Native Hook、Java/ObjC Hook、Stalker 追踪、模块导出的工作流模板
 - **TOML 配置** — 自定义传输方式、默认设备、远程设备、超时时间
 - **CLI 工具** — `doctor`、`devices`、`ps`、`ls`、`tools`、`install`/`uninstall` 等命令
-- **一键客户端配置** — 注册到 Claude Desktop、Claude Code、Cursor、Windsurf 或 VS Code
+- **一键客户端配置** — 支持注册到 22+ MCP 客户端，包括 Claude Desktop、Cursor、VS Code、Windsurf、Roo Code、Cline、Kiro 等
 - **结构化输出** — 所有工具返回紧凑的 JSON，带有 `Literal` 类型提示，对 LLM 友好
 
 ## 快速开始
@@ -58,20 +58,47 @@ uv tool install ya-frida-mcp
 ### 注册到 MCP 客户端
 
 ```bash
-# Claude Desktop
+# 选择你的客户端
 ya-frida-mcp install claude-desktop
-
-# Claude Code
-ya-frida-mcp install claude-code
-
-# Cursor / Windsurf / VS Code
 ya-frida-mcp install cursor
-ya-frida-mcp install windsurf
 ya-frida-mcp install vscode
+ya-frida-mcp install windsurf
+ya-frida-mcp install roo-code
+ya-frida-mcp install cline
 
-# 一次性全部注册
+# 一次性注册所有支持的客户端
 ya-frida-mcp install all
 ```
+
+<details>
+<summary>所有支持的客户端（22 个）</summary>
+
+| Key | 客户端 |
+|-----|--------|
+| `amazon-q` | Amazon Q Developer CLI |
+| `augment-code` | Augment Code |
+| `claude-desktop` | Claude Desktop |
+| `claude-code` | Claude Code |
+| `cline` | Cline |
+| `copilot-cli` | Copilot CLI |
+| `crush` | Crush |
+| `cursor` | Cursor |
+| `gemini-cli` | Gemini CLI |
+| `kilo-code` | Kilo Code |
+| `kiro` | Kiro |
+| `lm-studio` | LM Studio |
+| `opencode` | Opencode |
+| `qodo-gen` | Qodo Gen |
+| `qwen-coder` | Qwen Coder |
+| `roo-code` | Roo Code |
+| `trae` | Trae |
+| `vscode` | VS Code |
+| `vscode-insiders` | VS Code Insiders |
+| `warp` | Warp |
+| `windsurf` | Windsurf |
+| `zed` | Zed |
+
+</details>
 
 ### 手动启动服务器
 

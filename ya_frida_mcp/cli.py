@@ -8,7 +8,30 @@ import click
 
 from ya_frida_mcp.config import AppConfig
 
-_CLIENT_KEYS = ["claude-desktop", "claude-code", "cursor", "windsurf", "vscode"]
+_CLIENT_KEYS = [
+    "amazon-q",
+    "augment-code",
+    "claude-desktop",
+    "claude-code",
+    "cline",
+    "copilot-cli",
+    "crush",
+    "cursor",
+    "gemini-cli",
+    "kilo-code",
+    "kiro",
+    "lm-studio",
+    "opencode",
+    "qodo-gen",
+    "qwen-coder",
+    "roo-code",
+    "trae",
+    "vscode",
+    "vscode-insiders",
+    "warp",
+    "windsurf",
+    "zed",
+]
 
 
 @click.group()
