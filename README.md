@@ -12,6 +12,8 @@
 
 <p align="center"><b>Yet Another Frida MCP Server</b> — Full-featured <a href="https://modelcontextprotocol.io">MCP</a> server for <a href="https://frida.re">Frida</a> dynamic instrumentation.</p>
 
+<p align="center">English | <a href="README.zh-CN.md">简体中文</a></p>
+
 ---
 
 > Existing Frida MCP servers on the market are either abandoned, poorly maintained, or limited to a handful of basic operations. **ya-frida-mcp** was built from scratch to be a comprehensive, production-ready bridge between AI agents and Frida — covering device management, process control, script injection, memory operations, and even ADB integration out of the box.
