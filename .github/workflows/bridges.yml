@@ -35,7 +35,7 @@ jobs:
         run: |
           BRIDGES=$(python -c "import frida_tools, pathlib; print(pathlib.Path(frida_tools.__file__).parent / 'bridges')")
           echo "BRIDGES_DIR=$BRIDGES" >> "$GITHUB_ENV"
-          FT_VER=$(python -c "import frida_tools; print(frida_tools.VERSION)")
+          FT_VER=$(python -c "from importlib.metadata import version; print(version('frida-tools'))")
           echo "FT_VERSION=$FT_VER" >> "$GITHUB_ENV"
           mkdir -p dist/bridges
           cp "$BRIDGES/java.js" "$BRIDGES/objc.js" "$BRIDGES/swift.js" dist/bridges/
