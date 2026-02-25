@@ -136,7 +136,7 @@ def register_script_tools(mcp: FastMCP) -> None:
         sm: SessionManager = ctx.lifespan_context["session_manager"]
         source = f"""
         rpc.exports.enumerateExports = () => {{
-            return Module.enumerateExports("{module_name}");
+            return Module.load("{module_name}").enumerateExports();
         }};
         """
         script_id = await sm.inject_script(pid, source)

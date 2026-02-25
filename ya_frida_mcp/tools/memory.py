@@ -29,7 +29,7 @@ def register_memory_tools(mcp: FastMCP) -> None:
         sm: SessionManager = ctx.lifespan_context["session_manager"]
         source = f"""
         rpc.exports.readMemory = () => {{
-            const buf = Memory.readByteArray(ptr("{address}"), {size});
+            const buf = ptr("{address}").readByteArray({size});
             return buf ? Array.from(new Uint8Array(buf)) : [];
         }};
         """
@@ -61,7 +61,7 @@ def register_memory_tools(mcp: FastMCP) -> None:
         rpc.exports.writeMemory = () => {{
             const bytes = {byte_array};
             const buf = new Uint8Array(bytes).buffer;
-            Memory.writeByteArray(ptr("{address}"), buf);
+            ptr("{address}").writeByteArray(buf);
             return bytes.length;
         }};
         """

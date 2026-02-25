@@ -63,6 +63,11 @@ def register_process_tools(mcp: FastMCP) -> None:
             env: Environment variables as key-value pairs.
             cwd: Working directory for the spawned process.
             stdio: Standard I/O mode — "inherit", "pipe", or "redirect".
+
+        Note:
+            If spawn times out on Android, call ``frida_fix_usap`` to disable
+            the USAP pool and detect root-hiding modules that may interfere
+            with Frida's spawn interception.
         """
         dm: DeviceManager = ctx.lifespan_context["device_manager"]
         sm: SessionManager = ctx.lifespan_context["session_manager"]

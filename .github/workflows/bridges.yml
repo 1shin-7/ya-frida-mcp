@@ -1,0 +1,64 @@
+name: Build Frida Bridges
+
+on:
+  workflow_dispatch:
+    inputs:
+      frida_tools_version:
+        description: "frida-tools version (leave empty for latest)"
+        required: false
+        default: ""
+  schedule:
+    - cron: "0 6 * * 1" # weekly Monday 06:00 UTC
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install frida-tools
+        run: |
+          if [ -n "${{ inputs.frida_tools_version }}" ]; then
+            pip install "frida-tools==${{ inputs.frida_tools_version }}"
+          else
+            pip install frida-tools
+          fi
+
+      - name: Extract bridge JS files
+        run: |
+          BRIDGES=$(python -c "import frida_tools, pathlib; print(pathlib.Path(frida_tools.__file__).parent / 'bridges')")
+          echo "BRIDGES_DIR=$BRIDGES" >> "$GITHUB_ENV"
+          FT_VER=$(python -c "import frida_tools; print(frida_tools.VERSION)")
+          echo "FT_VERSION=$FT_VER" >> "$GITHUB_ENV"
+          mkdir -p dist/bridges
+          cp "$BRIDGES/java.js" "$BRIDGES/objc.js" "$BRIDGES/swift.js" dist/bridges/
+          echo "$FT_VER" > dist/bridges/version.txt
+          ls -la dist/bridges/
+
+      - name: Create / update bridges release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="bridges"
+          TITLE="Frida Bridges (frida-tools ${{ env.FT_VERSION }})"
+          BODY="Auto-built bridge JS files from frida-tools ${{ env.FT_VERSION }}."
+
+          # Delete existing release if present (to re-upload assets)
+          gh release delete "$TAG" --yes 2>/dev/null || true
+          git push --delete origin "$TAG" 2>/dev/null || true
+
+          gh release create "$TAG" \
+            --title "$TITLE" \
+            --notes "$BODY" \
+            --latest=false \
+            dist/bridges/java.js \
+            dist/bridges/objc.js \
+            dist/bridges/swift.js \
+            dist/bridges/version.txt

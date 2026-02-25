@@ -1,13 +1,55 @@
 """Frida session and script lifecycle management."""
 
 import contextlib
+import re
+from pathlib import Path
 from typing import Any
 
 import frida
 
 from ya_frida_mcp.core.base import BaseFridaManager
+from ya_frida_mcp.core.bridges import ensure_bridges
 from ya_frida_mcp.core.device import FridaDeviceWrapper
 from ya_frida_mcp.core.options import ScriptRuntime, SessionRealm, TargetSpec, resolve_target
+
+_V8_PATTERN = re.compile(
+    r"\bJava\s*\.|"
+    r"\bObjC\s*\.|"
+    r"\bSwift\s*\.",
+)
+
+# Bridge JS files (Java/ObjC/Swift) downloaded from GitHub release at runtime.
+# We do NOT bundle these files to respect the wxWindows Library Licence (LGPL).
+_BRIDGES_DIR: Path | None = ensure_bridges()
+
+
+def _needs_v8(source: str) -> bool:
+    """Return True if the script source uses APIs that require the V8 runtime."""
+    return _V8_PATTERN.search(source) is not None
+
+
+# Bridge loader stub injected before user scripts.
+# Defines lazy getters for Java/ObjC/Swift that request bridge code from the host.
+_BRIDGE_LOADER = """\
+(function(){
+  function defineBridge(name){
+    Object.defineProperty(globalThis,name,{
+      enumerable:true,configurable:true,
+      get:function(){
+        var b;
+        send({type:"frida:load-bridge",name:name});
+        recv("frida:bridge-loaded",function(msg){
+          b=Script.evaluate("/frida/bridges/"+msg.filename,
+            "(function(){"+msg.source+
+            ";Object.defineProperty(globalThis,'"+name+"',{value:bridge});return bridge;})();");
+        }).wait();
+        return b;
+      }
+    });
+  }
+  defineBridge("Java");defineBridge("ObjC");defineBridge("Swift");
+})();
+"""
 
 
 class ScriptHandle:
@@ -20,7 +62,27 @@ class ScriptHandle:
         self._script.on("message", self._on_message)
 
     def _on_message(self, message: dict[str, Any], data: Any) -> None:
+        if self._try_handle_bridge_request(message):
+            return
         self.messages.append({"message": message, "data": str(data) if data else None})
+
+    def _try_handle_bridge_request(self, message: dict[str, Any]) -> bool:
+        """Handle frida:load-bridge requests from the bridge loader stub."""
+        if message.get("type") != "send" or _BRIDGES_DIR is None:
+            return False
+        payload = message.get("payload")
+        if not isinstance(payload, dict) or payload.get("type") != "frida:load-bridge":
+            return False
+        stem = payload["name"].lower()
+        bridge = _BRIDGES_DIR / f"{stem}.js"
+        if not bridge.exists():
+            return False
+        self._script.post({
+            "type": "frida:bridge-loaded",
+            "filename": bridge.name,
+            "source": bridge.read_text(encoding="utf-8"),
+        })
+        return True
 
     async def load(self) -> None:
         await BaseFridaManager.run_sync(self._script.load)
@@ -116,6 +178,9 @@ class SessionManager(BaseFridaManager):
         if not session:
             msg = f"No active session for PID {pid}. Attach first."
             raise ValueError(msg)
+        # Prepend bridge loader when script uses Java/ObjC/Swift APIs
+        if _BRIDGES_DIR is not None and _needs_v8(source):
+            source = _BRIDGE_LOADER + source
         kwargs: dict[str, object] = {}
         if runtime is not None:
             kwargs["runtime"] = runtime
@@ -206,12 +271,11 @@ class SessionManager(BaseFridaManager):
         runtime: ScriptRuntime | None = None,
     ) -> bytes:
         session = self._get_session(pid)
-        kwargs: dict[str, object] = {"embed_script": embed_script}
-        if warmup_script is not None:
-            kwargs["warmup_script"] = warmup_script
         if runtime is not None:
-            kwargs["runtime"] = runtime
-        return await self.run_sync(session.snapshot_script, **kwargs)
+            return await self.run_sync(
+                session.snapshot_script, embed_script, warmup_script or "", runtime=runtime,
+            )
+        return await self.run_sync(session.snapshot_script, embed_script, warmup_script or "")
 
     async def eternalize_script(self, script_id: str) -> None:
         handle = self._scripts.get(script_id)
